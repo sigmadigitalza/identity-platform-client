@@ -2,6 +2,7 @@ package identity_platform
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,10 +20,15 @@ func NewProject(client *http.Client) *Project {
 	}
 }
 
-func (project *Project) GetConfig(projectId string) (*Config, error) {
+func (project *Project) GetConfig(ctx context.Context, projectId string) (*Config, error) {
 	url := fmt.Sprintf("https://identitytoolkit.googleapis.com/admin/v2/projects/%s/config", projectId)
 
-	resp, err := project.c.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := project.c.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +41,7 @@ func (project *Project) GetConfig(projectId string) (*Config, error) {
 	return hydrate(resp.Body)
 }
 
-func (project *Project) UpdateConfig(projectId string, newConfig *Config) (*Config, error) {
+func (project *Project) UpdateConfig(ctx context.Context, projectId string, newConfig *Config) (*Config, error) {
 	url := fmt.Sprintf("https://identitytoolkit.googleapis.com/admin/v2/projects/%s/config", projectId)
 
 	payload, err := json.Marshal(newConfig)
@@ -43,7 +49,7 @@ func (project *Project) UpdateConfig(projectId string, newConfig *Config) (*Conf
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, url, bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
